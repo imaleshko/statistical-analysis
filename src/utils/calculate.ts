@@ -1,91 +1,105 @@
-type Frequency = Record<string, number>;
+export type DistributionRow = {
+  value: number;
+  frequency: number;
+  relativeFrequency: number;
+  cumulativeFrequency: number;
+  relativeCumulativeFrequency: number;
+};
 
-interface CalculateResult {
-  frequency: Frequency;
-  relativeFrequency: Frequency;
-  cumulativeFrequency: Frequency;
-  relativeCumulativeFrequency: Frequency;
+export type EdfPiece = {
+  range: string;
+  value: string;
+};
+
+export interface Statistics {
+  variationalSeries: number[];
+  distribution: DistributionRow[];
   total: number;
-  mo: string[];
-  me: number;
+  edf: EdfPiece[];
+  mode: number[];
+  median: number;
   mean: number;
   variance: number;
   standardDeviation: number;
-  rawMoment: number;
+  secondRawMoment: number;
 }
 
-export const calculate = (data: number[]): CalculateResult => {
+export const calculate = (data: number[]): Statistics => {
   const length = data.length;
   const variationalSeries = [...data].sort((a, b) => a - b);
 
-  const frequency: Frequency = {};
-  variationalSeries.forEach((value) => {
-    frequency[value] = (frequency[value] || 0) + 1;
-  });
-
-  const relativeFrequency = Object.fromEntries(
-    Object.entries(frequency).map(([key, value]) => [key, value / length]),
-  );
-
-  const cumulativeFrequencyEntries: [string, number][] =
-    Object.entries(frequency);
-  let cumulative = 0;
-  const cumulativeFrequency = Object.fromEntries(
-    cumulativeFrequencyEntries.map(([key, value]) => {
-      const current = cumulative;
-      cumulative += value;
-      return [key, current];
-    }),
-  );
-
-  const relativeCumulativeFrequency = Object.fromEntries(
-    Object.entries(cumulativeFrequency).map(([key, value]) => [
-      key,
-      value / length,
-    ]),
-  );
-
-  const maxFrequency = Math.max(...Object.values(frequency));
-  const mo = Object.entries(frequency)
-    .filter(([, value]) => value === maxFrequency)
-    .map(([key]) => key);
-
-  let me;
-  if (length % 2 === 0) {
-    me =
-      (variationalSeries[length / 2 - 1] + variationalSeries[length / 2]) / 2;
-  } else {
-    me = variationalSeries[Math.floor(length / 2)];
+  const frequenciesByValue = new Map<number, number>();
+  for (const value of variationalSeries) {
+    frequenciesByValue.set(value, (frequenciesByValue.get(value) ?? 0) + 1);
   }
 
+  const distribution: DistributionRow[] = [];
+  let cumulative = 0;
+  for (const [value, frequency] of frequenciesByValue) {
+    distribution.push({
+      value,
+      frequency,
+      relativeFrequency: frequency / length,
+      cumulativeFrequency: cumulative,
+      relativeCumulativeFrequency: cumulative / length,
+    });
+    cumulative += frequency;
+  }
+
+  const edf: EdfPiece[] = [];
+  edf.push({ range: `x ≤ ${distribution[0].value}`, value: "0" });
+  for (let i = 0; i < distribution.length - 1; i++) {
+    edf.push({
+      range: `${distribution[i].value} < x ≤ ${distribution[i + 1].value}`,
+      value: distribution[i + 1].relativeCumulativeFrequency.toFixed(2),
+    });
+  }
+  edf.push({
+    range: `x > ${distribution.at(-1)!.value}`,
+    value: "1",
+  });
+
+  const maxFrequency = Math.max(...distribution.map((row) => row.frequency));
+  const mode = distribution
+    .filter((row) => row.frequency === maxFrequency)
+    .map((row) => row.value);
+
+  const mid = length / 2;
+  const median =
+    length % 2 === 0
+      ? (variationalSeries[mid - 1] + variationalSeries[mid]) / 2
+      : variationalSeries[Math.floor(mid)];
+
   const mean =
-    Object.entries(frequency).reduce((acc, [key, value]) => {
-      return acc + Number(key) * value;
-    }, 0) / length;
+    distribution.reduce(
+      (sum, { value, frequency }) => sum + value * frequency,
+      0,
+    ) / length;
 
   const variance =
-    Object.entries(frequency).reduce((acc, [key, value]) => {
-      return acc + (Number(key) - mean) ** 2 * value;
-    }, 0) / length;
+    distribution.reduce(
+      (sum, { value, frequency }) => sum + (value - mean) ** 2 * frequency,
+      0,
+    ) / length;
 
   const standardDeviation = Math.sqrt(variance);
 
-  const rawMoment =
-    Object.entries(frequency).reduce((acc, [key, value]) => {
-      return acc + Number(key) ** 2 * value;
-    }, 0) / length;
+  const secondRawMoment =
+    distribution.reduce(
+      (sum, { value, frequency }) => sum + value ** 2 * frequency,
+      0,
+    ) / length;
 
   return {
-    frequency,
-    relativeFrequency,
-    cumulativeFrequency,
-    relativeCumulativeFrequency,
+    variationalSeries,
+    distribution,
     total: length,
-    mo,
-    me,
+    edf,
+    mode,
+    median,
     mean,
     variance,
     standardDeviation,
-    rawMoment,
+    secondRawMoment,
   };
 };
