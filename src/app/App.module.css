@@ -20,34 +20,47 @@
 }
 
 .modeSwitcher {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .modeButton {
-    padding: 8px 16px;
-    border: var(--border);
-    background-color: transparent;
-    border-radius: 8px;
-    cursor: pointer;
+  padding: 8px 16px;
+  border: var(--border);
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
 }
 
-.activeModeButton {
-    padding: 8px 16px;
-    border: var(--border);
-    background-color: var(--graphic-color);
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
+.modeButton.active {
+  background-color: var(--graphic-color);
+  color: white;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px;
+  border-radius: 4px;
+  border: var(--border);
+  background-color: var(--back-color);
+}
+
+.customSearchBlock {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .inputTitle {
   display: block;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .input {

@@ -1,30 +1,71 @@
 import styles from "./App.module.css";
 import { useMemo, useState } from "react";
-import { calculate } from "@/utils/calculate.ts";
-import { parseNumbers, parseSentenceLengths, parseWordLengths } from "@/utils/parsers.ts";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { calculate, calculateCategorical } from "@/utils/calculate.ts";
+import {
+  parseCustomExpression,
+  parseNumbers,
+  parseSentenceLengths,
+  parseWordLengths,
+} from "@/utils/parsers.ts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-type InputMode = "numbers" | "words" | "sentences";
+type InputMode = "numbers" | "words" | "sentences" | "custom";
+
+const MODES: { id: InputMode; label: string }[] = [
+  { id: "numbers", label: "Числа" },
+  { id: "words", label: "Довжина слів" },
+  { id: "sentences", label: "Довжина речень" },
+  { id: "custom", label: "Пошук символів" },
+];
+
+const PLACEHOLDERS: Record<InputMode, string> = {
+  numbers: "Числа через пробіл, кому або крапку з комою",
+  words: "Текст",
+  sentences: "Текст",
+  custom: "Введіть текст для пошуку",
+};
 
 export const App = () => {
   const [inputData, setInputData] = useState("");
+  const [searchExpression, setSearchExpression] = useState("");
   const [mode, setMode] = useState<InputMode>("numbers");
 
   const result = useMemo(() => {
-    let numbers: number[] = [];
+    switch (mode) {
+      case "numbers": {
+        const numbers = parseNumbers(inputData);
+        return numbers.length === 0 ? null : calculate(numbers);
+      }
+      case "words": {
+        const numbers = parseWordLengths(inputData);
+        return numbers.length === 0 ? null : calculate(numbers);
+      }
+      case "sentences": {
+        const numbers = parseSentenceLengths(inputData);
+        return numbers.length === 0 ? null : calculate(numbers);
+      }
+      case "custom": {
+        const expressions = parseCustomExpression(inputData, searchExpression);
+        return expressions.length === 0
+          ? null
+          : calculateCategorical(expressions);
+      }
+    }
+  }, [inputData, mode, searchExpression]);
 
-    if (mode === "numbers") numbers = parseNumbers(inputData);
-    if (mode === "words") numbers = parseWordLengths(inputData);
-    if (mode === "sentences") numbers = parseSentenceLengths(inputData);
-
-    if (numbers.length === 0) return null;
-    return calculate(numbers);
-  }, [inputData, mode]);
-
-  const placeholders: Record<InputMode, string> = {
-    numbers: "Числа через пробіл, кому або крапку з комою",
-    words: "Текст",
-    sentences: "Текст",
+  const handleModeChange = (newMode: InputMode) => {
+    setMode(newMode);
+    setInputData("");
+    setSearchExpression("");
   };
 
   return (
@@ -33,31 +74,32 @@ export const App = () => {
 
       <section className={styles.section}>
         <div className={styles.modeSwitcher}>
-          <button
-            className={
-              mode === "numbers" ? styles.activeModeButton : styles.modeButton
-            }
-            onClick={() => setMode("numbers")}
-          >
-            Числа
-          </button>
-          <button
-            className={
-              mode === "words" ? styles.activeModeButton : styles.modeButton
-            }
-            onClick={() => setMode("words")}
-          >
-            Довжина слів
-          </button>
-          <button
-            className={
-              mode === "sentences" ? styles.activeModeButton : styles.modeButton
-            }
-            onClick={() => setMode("sentences")}
-          >
-            Довжина речень
-          </button>
+          {MODES.map(({ id, label }) => (
+            <button
+              key={id}
+              className={`${styles.modeButton} ${mode === id ? styles.active : ""}`}
+              onClick={() => handleModeChange(id)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+
+        {mode === "custom" && (
+          <div className={styles.customSearchBlock}>
+            <label htmlFor="search-input" className={styles.inputTitle}>
+              Що шукаємо?
+            </label>
+            <input
+              id="search-input"
+              type="text"
+              className={styles.searchInput}
+              placeholder="Букви або буквосполучення"
+              value={searchExpression}
+              onChange={(e) => setSearchExpression(e.target.value)}
+            />
+          </div>
+        )}
 
         <label htmlFor="data-input" className={styles.inputTitle}>
           Введіть дані:
@@ -65,7 +107,7 @@ export const App = () => {
         <textarea
           id="data-input"
           className={styles.input}
-          placeholder={placeholders[mode]}
+          placeholder={PLACEHOLDERS[mode]}
           value={inputData}
           onChange={(e) => setInputData(e.target.value)}
         />
@@ -177,8 +219,10 @@ export const App = () => {
                   <CartesianGrid strokeDasharray="1 0" />
                   <XAxis
                     dataKey="x"
-                    type="number"
-                    domain={["dataMin", "dataMax"]}
+                    type={mode === "custom" ? "category" : "number"}
+                    domain={
+                      mode === "custom" ? undefined : ["dataMin", "dataMax"]
+                    }
                   />
                   <YAxis />
                   <Tooltip />
@@ -199,111 +243,117 @@ export const App = () => {
             </div>
           </div>
 
-          <div className={styles.graphicGroup}>
-            <h2 className={styles.groupTitle}>
-              Емпірична функція розподілу F*(x)
-            </h2>
+          {mode !== "custom" && "edf" in result && (
+            <div className={styles.graphicGroup}>
+              <h2 className={styles.groupTitle}>
+                Емпірична функція розподілу F*(x)
+              </h2>
 
-            <div className={styles.edf}>
-              <span>F*(x) = </span>
-              <span className={styles.brace}>{"{"}</span>
-              <ul className={styles.list}>
-                {result.edf.map((item, index) => (
-                  <li key={index}>
-                    {item.value}, при {item.range}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className={styles.graphicContainer}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={result.distribution.map((row) => ({
-                    x: row.value,
-                    f: row.relativeCumulativeFrequency,
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="x"
-                    type="number"
-                    domain={["dataMin", "dataMax"]}
-                  />
-                  <YAxis domain={[0, 1]} />
-                  <Tooltip
-                    formatter={(value) =>
-                      typeof value === "number"
-                        ? value.toFixed(3)
-                        : String(value)
-                    }
-                  />
-                  {result.distribution.map((row) => (
-                    <ReferenceLine
-                      key={row.value}
-                      segment={[
-                        { x: row.value, y: row.relativeCumulativeFrequency },
-                        { x: row.value, y: 0 },
-                      ]}
-                      stroke="#999"
-                      strokeDasharray="3 3"
-                    />
+              <div className={styles.edf}>
+                <span>F*(x) = </span>
+                <span className={styles.brace}>{"{"}</span>
+                <ul className={styles.list}>
+                  {result.edf.map((item) => (
+                    <li key={item.range}>
+                      {item.value}, при {item.range}
+                    </li>
                   ))}
+                </ul>
+              </div>
 
-                  <Line
-                    type="stepAfter"
-                    dataKey="f"
-                    stroke="var(--graphic-color)"
-                    strokeWidth={2}
-                    dot={{
-                      r: 4,
-                      fill: "var(--graphic-color)",
-                      stroke: "var(--graphic-color)",
-                    }}
-                    name="F*(x)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+              <div className={styles.graphicContainer}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={result.distribution.map((row) => ({
+                      x: row.value,
+                      f: row.relativeCumulativeFrequency,
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="x"
+                      type="number"
+                      domain={["dataMin", "dataMax"]}
+                    />
+                    <YAxis domain={[0, 1]} />
+                    <Tooltip
+                      formatter={(value) =>
+                        typeof value === "number"
+                          ? value.toFixed(3)
+                          : String(value)
+                      }
+                    />
+                    {result.distribution.map((row) => (
+                      <ReferenceLine
+                        key={row.value}
+                        segment={[
+                          { x: row.value, y: row.relativeCumulativeFrequency },
+                          { x: row.value, y: 0 },
+                        ]}
+                        stroke="#999"
+                        strokeDasharray="3 3"
+                      />
+                    ))}
 
-          <div className={styles.tableGroup}>
-            <h2 className={styles.groupTitle}>Загальні дані</h2>
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <tbody>
-                  <tr>
-                    <th className={styles.th}>Мода (Mo)</th>
-                    <td className={styles.td}>{result.mode.join(", ")}</td>
-                  </tr>
-                  <tr>
-                    <th className={styles.th}>Медіана (Me)</th>
-                    <td className={styles.td}>{result.median}</td>
-                  </tr>
-                  <tr>
-                    <th className={styles.th}>Середнє (x̄)</th>
-                    <td className={styles.td}>{result.mean.toFixed(3)}</td>
-                  </tr>
-                  <tr>
-                    <th className={styles.th}>Дисперсія (D)</th>
-                    <td className={styles.td}>{result.variance.toFixed(3)}</td>
-                  </tr>
-                  <tr>
-                    <th className={styles.th}>СКВ (σ)</th>
-                    <td className={styles.td}>
-                      {result.standardDeviation.toFixed(3)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className={styles.th}>Початковий момент 2 порядку</th>
-                    <td className={styles.td}>
-                      {result.secondRawMoment.toFixed(3)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    <Line
+                      type="stepAfter"
+                      dataKey="f"
+                      stroke="var(--graphic-color)"
+                      strokeWidth={2}
+                      dot={{
+                        r: 4,
+                        fill: "var(--graphic-color)",
+                        stroke: "var(--graphic-color)",
+                      }}
+                      name="F*(x)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          )}
+
+          {mode !== "custom" && "mode" in result && (
+            <div className={styles.tableGroup}>
+              <h2 className={styles.groupTitle}>Загальні дані</h2>
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <tbody>
+                    <tr>
+                      <th className={styles.th}>Мода (Mo)</th>
+                      <td className={styles.td}>{result.mode.join(", ")}</td>
+                    </tr>
+                    <tr>
+                      <th className={styles.th}>Медіана (Me)</th>
+                      <td className={styles.td}>{result.median}</td>
+                    </tr>
+                    <tr>
+                      <th className={styles.th}>Середнє (x̄)</th>
+                      <td className={styles.td}>{result.mean.toFixed(3)}</td>
+                    </tr>
+                    <tr>
+                      <th className={styles.th}>Дисперсія (D)</th>
+                      <td className={styles.td}>
+                        {result.variance.toFixed(3)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className={styles.th}>СКВ (σ)</th>
+                      <td className={styles.td}>
+                        {result.standardDeviation.toFixed(3)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className={styles.th}>Початковий момент 2 порядку</th>
+                      <td className={styles.td}>
+                        {result.secondRawMoment.toFixed(3)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>

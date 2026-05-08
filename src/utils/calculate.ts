@@ -1,5 +1,5 @@
-export type DistributionRow = {
-  value: number;
+export type DistributionRow<T = number> = {
+  value: T;
   frequency: number;
   relativeFrequency: number;
   cumulativeFrequency: number;
@@ -11,10 +11,13 @@ export type EdfPiece = {
   value: string;
 };
 
-export interface Statistics {
-  variationalSeries: number[];
-  distribution: DistributionRow[];
+export interface BaseStatistics<T> {
+  variationalSeries: T[];
+  distribution: DistributionRow<T>[];
   total: number;
+}
+
+export interface Statistics extends BaseStatistics<number> {
   edf: EdfPiece[];
   mode: number[];
   median: number;
@@ -23,6 +26,8 @@ export interface Statistics {
   standardDeviation: number;
   secondRawMoment: number;
 }
+
+export type CategoricalStatistics = BaseStatistics<string>;
 
 export const calculate = (data: number[]): Statistics => {
   const length = data.length;
@@ -101,5 +106,34 @@ export const calculate = (data: number[]): Statistics => {
     variance,
     standardDeviation,
     secondRawMoment,
+  };
+};
+
+export const calculateCategorical = (data: string[]): CategoricalStatistics => {
+  const length = data.length;
+  const variationalSeries = [...data].sort((a, b) => a.localeCompare(b));
+
+  const frequenciesByValue = new Map<string, number>();
+  for (const value of variationalSeries) {
+    frequenciesByValue.set(value, (frequenciesByValue.get(value) ?? 0) + 1);
+  }
+
+  const distribution = [];
+  let cumulative = 0;
+  for (const [value, frequency] of frequenciesByValue) {
+    distribution.push({
+      value,
+      frequency,
+      relativeFrequency: frequency / length,
+      cumulativeFrequency: cumulative,
+      relativeCumulativeFrequency: cumulative / length,
+    });
+    cumulative += frequency;
+  }
+
+  return {
+    variationalSeries,
+    distribution,
+    total: length,
   };
 };
