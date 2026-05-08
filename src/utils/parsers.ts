@@ -6,7 +6,7 @@ export const parseNumbers = (data: string): number[] => {
     .filter((n) => !isNaN(n));
 };
 
-export const parseWordLength = (data: string): number[] => {
+export const parseWordLengths = (data: string): number[] => {
   return data
     .split(/\s+/)
     .map((word) => word.replace(/[.,?!:;()[\]"«»—]/g, ""))
@@ -14,7 +14,7 @@ export const parseWordLength = (data: string): number[] => {
     .map((word) => word.length);
 };
 
-export const parseSentenceLength = (data: string): number[] => {
+export const parseSentenceLengths = (data: string): number[] => {
   return data
     .split(/[.?!]+/)
     .map((sentence) => sentence.trim())

@@ -1,30 +1,71 @@
 import styles from "./App.module.css";
-import {useMemo, useState} from "react";
-import {calculate} from "@/utils/calculate.ts";
-import {parseNumbers} from "@/utils/parsers.ts";
-import {CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,} from "recharts";
+import { useMemo, useState } from "react";
+import { calculate } from "@/utils/calculate.ts";
+import { parseNumbers, parseSentenceLengths, parseWordLengths } from "@/utils/parsers.ts";
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-const App = () => {
+type InputMode = "numbers" | "words" | "sentences";
+
+export const App = () => {
   const [inputData, setInputData] = useState("");
+  const [mode, setMode] = useState<InputMode>("numbers");
 
   const result = useMemo(() => {
-    const numbers = parseNumbers(inputData);
+    let numbers: number[] = [];
+
+    if (mode === "numbers") numbers = parseNumbers(inputData);
+    if (mode === "words") numbers = parseWordLengths(inputData);
+    if (mode === "sentences") numbers = parseSentenceLengths(inputData);
+
     if (numbers.length === 0) return null;
     return calculate(numbers);
-  }, [inputData]);
+  }, [inputData, mode]);
+
+  const placeholders: Record<InputMode, string> = {
+    numbers: "Числа через пробіл, кому або крапку з комою",
+    words: "Текст",
+    sentences: "Текст",
+  };
 
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.pageTitle}>Статистичний аналіз даних</h1>
 
       <section className={styles.section}>
+        <div className={styles.modeSwitcher}>
+          <button
+            className={
+              mode === "numbers" ? styles.activeModeButton : styles.modeButton
+            }
+            onClick={() => setMode("numbers")}
+          >
+            Числа
+          </button>
+          <button
+            className={
+              mode === "words" ? styles.activeModeButton : styles.modeButton
+            }
+            onClick={() => setMode("words")}
+          >
+            Довжина слів
+          </button>
+          <button
+            className={
+              mode === "sentences" ? styles.activeModeButton : styles.modeButton
+            }
+            onClick={() => setMode("sentences")}
+          >
+            Довжина речень
+          </button>
+        </div>
+
         <label htmlFor="data-input" className={styles.inputTitle}>
           Введіть дані:
         </label>
         <textarea
           id="data-input"
           className={styles.input}
-          placeholder="Числа через пробіл, кому або крапку з комою"
+          placeholder={placeholders[mode]}
           value={inputData}
           onChange={(e) => setInputData(e.target.value)}
         />
@@ -268,5 +309,3 @@ const App = () => {
     </div>
   );
 };
-
-export default App;
