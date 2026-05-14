@@ -8,16 +8,16 @@ export const parseNumbers = (data: string): number[] =>
 export const parseWordLengths = (data: string): number[] =>
   data
     .split(/\s+/)
-    .map((word) => word.replace(/[.,?!:;()[\]"«»—]/g, ""))
+    .map((word) => word.replace(/[.,?!:;()[\]"«»—\d-]/g, ""))
     .filter(Boolean)
     .map((word) => word.length);
 
 export const parseSentenceLengths = (data: string): number[] =>
   data
-    .split(/[.?!]+/)
-    .map((sentence) => sentence.trim())
+    .split(/[.?!]+\s+/)
+    .map((sentence) => sentence.replace(/[.?!]+$/, "").trim())
     .filter(Boolean)
-    .map((sentence) => sentence.length);
+    .map((sentence) => sentence.split(/\s+/).length);
 
 export const parseCustomExpression = (
   text: string,
