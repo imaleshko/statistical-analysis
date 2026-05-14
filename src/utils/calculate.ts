@@ -24,12 +24,13 @@ export interface Statistics extends BaseStatistics<number> {
   mean: number;
   variance: number;
   standardDeviation: number;
-  secondRawMoment: number;
+  rawMoment: number;
+  momentOrder: number;
 }
 
 export type CategoricalStatistics = BaseStatistics<string>;
 
-export const calculate = (data: number[]): Statistics => {
+export const calculate = (data: number[], order: number): Statistics => {
   const length = data.length;
   const variationalSeries = [...data].sort((a, b) => a - b);
 
@@ -89,11 +90,13 @@ export const calculate = (data: number[]): Statistics => {
 
   const standardDeviation = Math.sqrt(variance);
 
-  const secondRawMoment =
+  const rawMoment =
     distribution.reduce(
-      (sum, { value, frequency }) => sum + value ** 2 * frequency,
+      (sum, { value, frequency }) => sum + value ** order * frequency,
       0,
     ) / length;
+
+  const momentOrder = order;
 
   return {
     variationalSeries,
@@ -105,7 +108,8 @@ export const calculate = (data: number[]): Statistics => {
     mean,
     variance,
     standardDeviation,
-    secondRawMoment,
+    rawMoment,
+    momentOrder,
   };
 };
 

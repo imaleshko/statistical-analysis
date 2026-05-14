@@ -36,6 +36,7 @@ const PLACEHOLDERS: Record<InputMode, string> = {
 
 export const App = () => {
   const [inputData, setInputData] = useState("");
+  const [order, setOrder] = useState("2");
   const [searchExpression, setSearchExpression] = useState("");
   const [mode, setMode] = useState<InputMode>("numbers");
 
@@ -43,15 +44,30 @@ export const App = () => {
     switch (mode) {
       case "numbers": {
         const numbers = parseNumbers(inputData);
-        return numbers.length === 0 ? null : calculate(numbers);
+        const parsedOrder = Number(order);
+        const safeOrder =
+          Number.isFinite(parsedOrder) && parsedOrder >= 1
+            ? Math.floor(parsedOrder)
+            : 2;
+        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
       }
       case "words": {
         const numbers = parseWordLengths(inputData);
-        return numbers.length === 0 ? null : calculate(numbers);
+        const parsedOrder = Number(order);
+        const safeOrder =
+          Number.isFinite(parsedOrder) && parsedOrder >= 1
+            ? Math.floor(parsedOrder)
+            : 2;
+        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
       }
       case "sentences": {
         const numbers = parseSentenceLengths(inputData);
-        return numbers.length === 0 ? null : calculate(numbers);
+        const parsedOrder = Number(order);
+        const safeOrder =
+          Number.isFinite(parsedOrder) && parsedOrder >= 1
+            ? Math.floor(parsedOrder)
+            : 2;
+        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
       }
       case "custom": {
         const expressions = parseCustomExpression(inputData, searchExpression);
@@ -60,7 +76,7 @@ export const App = () => {
           : calculateCategorical(expressions);
       }
     }
-  }, [inputData, mode, searchExpression]);
+  }, [inputData, order, searchExpression, mode]);
 
   const handleModeChange = (newMode: InputMode) => {
     setMode(newMode);
@@ -85,15 +101,32 @@ export const App = () => {
           ))}
         </div>
 
-        {mode === "custom" && (
-          <div className={styles.customSearchBlock}>
+        {mode != "custom" && (
+          <div className={styles.optionalSearchBlock}>
             <label htmlFor="search-input" className={styles.inputTitle}>
-              Що шукаємо?
+              Порядок початкового моменту
+            </label>
+            <input
+              id="search-input"
+              type="number"
+              className={styles.optionalInput}
+              min="1"
+              placeholder="Цифра"
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+            />
+          </div>
+        )}
+
+        {mode === "custom" && (
+          <div className={styles.optionalSearchBlock}>
+            <label htmlFor="search-input" className={styles.inputTitle}>
+              Введіть символи для пошуку
             </label>
             <input
               id="search-input"
               type="text"
-              className={styles.searchInput}
+              className={styles.optionalInput}
               placeholder="Букви або буквосполучення"
               value={searchExpression}
               onChange={(e) => setSearchExpression(e.target.value)}
@@ -283,9 +316,10 @@ export const App = () => {
                           : String(value)
                       }
                     />
+
                     {result.distribution.map((row) => (
                       <ReferenceLine
-                        key={row.value}
+                        key={`column-${row.value}`}
                         segment={[
                           { x: row.value, y: row.relativeCumulativeFrequency },
                           { x: row.value, y: 0 },
@@ -295,16 +329,36 @@ export const App = () => {
                       />
                     ))}
 
+                    {result.distribution.map((row, i) => {
+                      const next = result.distribution[i + 1];
+                      return (
+                        <ReferenceLine
+                          key={`line-${row.value}`}
+                          segment={[
+                            {
+                              x: row.value,
+                              y: row.relativeCumulativeFrequency,
+                            },
+                            {
+                              x: next ? next.value : row.value,
+                              y: row.relativeCumulativeFrequency,
+                            },
+                          ]}
+                          stroke="var(--graphic-color)"
+                          strokeWidth={2}
+                        />
+                      );
+                    })}
+
                     <Line
-                      type="stepAfter"
                       dataKey="f"
-                      stroke="var(--graphic-color)"
-                      strokeWidth={2}
+                      stroke="transparent"
                       dot={{
                         r: 4,
                         fill: "var(--graphic-color)",
                         stroke: "var(--graphic-color)",
                       }}
+                      isAnimationActive={false}
                       name="F*(x)"
                     />
                   </LineChart>
@@ -315,7 +369,7 @@ export const App = () => {
 
           {mode !== "custom" && "mode" in result && (
             <div className={styles.tableGroup}>
-              <h2 className={styles.groupTitle}>Загальні дані</h2>
+              <h2 className={styles.groupTitle}>Числові характеристики</h2>
               <div className={styles.tableContainer}>
                 <table className={styles.table}>
                   <tbody>
@@ -344,9 +398,11 @@ export const App = () => {
                       </td>
                     </tr>
                     <tr>
-                      <th className={styles.th}>Початковий момент 2 порядку</th>
+                      <th className={styles.th}>
+                        Початковий момент {`${result.momentOrder}`} порядку
+                      </th>
                       <td className={styles.td}>
-                        {result.secondRawMoment.toFixed(3)}
+                        {result.rawMoment.toFixed(3)}
                       </td>
                     </tr>
                   </tbody>
