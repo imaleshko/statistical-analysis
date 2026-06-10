@@ -98,7 +98,7 @@ export const calculateCategorical = (data: string[]): CategoricalStatistics => {
     frequenciesByValue.set(value, (frequenciesByValue.get(value) ?? 0) + 1);
   }
 
-  const distribution = [];
+  const distribution: DistributionRow<string>[] = [];
   let cumulative = 0;
   for (const [value, frequency] of frequenciesByValue) {
     distribution.push({

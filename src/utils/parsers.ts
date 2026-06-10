@@ -1,40 +1,7 @@
-const ALPHABET = [
-  "а",
-  "б",
-  "в",
-  "г",
-  "ґ",
-  "д",
-  "е",
-  "є",
-  "ж",
-  "з",
-  "и",
-  "і",
-  "ї",
-  "й",
-  "к",
-  "л",
-  "м",
-  "н",
-  "о",
-  "п",
-  "р",
-  "с",
-  "т",
-  "у",
-  "ф",
-  "х",
-  "ц",
-  "ч",
-  "ш",
-  "щ",
-  "ь",
-  "ю",
-  "я",
-];
+import { ALPHABET } from "@/app/constants.ts";
 
 const LETTER_INDEX = new Map(ALPHABET.map((char, index) => [char, index]));
+const NON_LETTER = new RegExp(`[^${ALPHABET.join("")}]`, "g");
 
 export const parseNumbers = (data: string): number[] =>
   data
@@ -91,7 +58,7 @@ export const parseLetterPairs = (text: string): number[][] => {
   const words = text
     .toLowerCase()
     .split(/\s+/)
-    .map((word) => word.replace(/[^абвгґдеєжзиіїйклмнопрстуфхцчшщьюя]/g, ""))
+    .map((word) => word.replace(NON_LETTER, ""))
     .filter(Boolean);
 
   for (const word of words) {

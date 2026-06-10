@@ -13,7 +13,7 @@ export const PLACEHOLDERS: Record<InputMode, string> = {
   words: "Текст",
   sentences: "Текст",
   custom: "Текст",
-  correlation: "Текст",
+  correlation: "Текст (тільки українські літери)",
 };
 
 export const ALPHABET = [

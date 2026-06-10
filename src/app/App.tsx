@@ -102,11 +102,11 @@ export const App = () => {
 
         {(mode === "numbers" || mode === "words" || mode === "sentences") && (
           <div className={styles.optionalSearchBlock}>
-            <label htmlFor="search-input" className={styles.inputTitle}>
+            <label htmlFor="order-input" className={styles.inputTitle}>
               Порядок початкового моменту
             </label>
             <input
-              id="search-input"
+              id="order-input"
               type="number"
               className={styles.optionalInput}
               min="1"
@@ -119,11 +119,14 @@ export const App = () => {
 
         {mode === "custom" && (
           <div className={styles.optionalSearchBlock}>
-            <label htmlFor="search-input" className={styles.inputTitle}>
+            <label
+              htmlFor="search-expression-input"
+              className={styles.inputTitle}
+            >
               Введіть символи для пошуку
             </label>
             <input
-              id="search-input"
+              id="search-expression-input"
               type="text"
               className={styles.optionalInput}
               placeholder="Букви або буквосполучення"
@@ -133,18 +136,16 @@ export const App = () => {
           </div>
         )}
 
-        <>
-          <label htmlFor="data-input" className={styles.inputTitle}>
-            Введіть дані:
-          </label>
-          <textarea
-            id="data-input"
-            className={styles.input}
-            placeholder={PLACEHOLDERS[mode]}
-            value={inputData}
-            onChange={(e) => setInputData(e.target.value)}
-          />
-        </>
+        <label htmlFor="data-input" className={styles.inputTitle}>
+          Введіть дані:
+        </label>
+        <textarea
+          id="data-input"
+          className={styles.input}
+          placeholder={PLACEHOLDERS[mode]}
+          value={inputData}
+          onChange={(e) => setInputData(e.target.value)}
+        />
       </section>
 
       {result && (
@@ -337,17 +338,18 @@ export const App = () => {
 
                         {result.distribution.map((row, i) => {
                           const next = result.distribution[i + 1];
+                          if (!next) return null;
                           return (
                             <ReferenceLine
                               key={`line-${row.value}`}
                               segment={[
                                 {
                                   x: row.value,
-                                  y: row.relativeCumulativeFrequency,
+                                  y: next.relativeCumulativeFrequency,
                                 },
                                 {
-                                  x: next ? next.value : row.value,
-                                  y: row.relativeCumulativeFrequency,
+                                  x: next.value,
+                                  y: next.relativeCumulativeFrequency,
                                 },
                               ]}
                               stroke="var(--graphic-color)"
