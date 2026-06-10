@@ -1,7 +1,9 @@
 import styles from "./App.module.css";
 import { useMemo, useState } from "react";
+import type { InputMode } from "@/interfaces/interfaces.ts";
+import { ALPHABET, MODES, PLACEHOLDERS } from "@/app/constants.ts";
 import {
-  calculate,
+  calculateBase,
   calculateCategorical,
   calculateCorrelation,
 } from "@/utils/calculate.ts";
@@ -22,60 +24,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-type InputMode = "numbers" | "words" | "sentences" | "custom" | "correlation";
-
-const MODES: { id: InputMode; label: string }[] = [
-  { id: "numbers", label: "Числа" },
-  { id: "words", label: "Довжина слів" },
-  { id: "sentences", label: "Довжина речень" },
-  { id: "custom", label: "Пошук символів" },
-  { id: "correlation", label: "Кореляція" },
-];
-
-const PLACEHOLDERS: Record<InputMode, string> = {
-  numbers: "Числа через пробіл, кому або крапку з комою",
-  words: "Текст",
-  sentences: "Текст",
-  custom: "Введіть текст для пошуку",
-  correlation: "Текст для аналізу пар літер",
-};
-
-const ALPHABET = [
-  "а",
-  "б",
-  "в",
-  "г",
-  "ґ",
-  "д",
-  "е",
-  "є",
-  "ж",
-  "з",
-  "и",
-  "і",
-  "ї",
-  "й",
-  "к",
-  "л",
-  "м",
-  "н",
-  "о",
-  "п",
-  "р",
-  "с",
-  "т",
-  "у",
-  "ф",
-  "х",
-  "ц",
-  "ч",
-  "ш",
-  "щ",
-  "ь",
-  "ю",
-  "я",
-];
 
 export const App = () => {
   const [inputData, setInputData] = useState("");
@@ -99,7 +47,7 @@ export const App = () => {
           Number.isFinite(parsedOrder) && parsedOrder >= 1
             ? Math.floor(parsedOrder)
             : 2;
-        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
+        return numbers.length === 0 ? null : calculateBase(numbers, safeOrder);
       }
       case "words": {
         const numbers = parseWordLengths(inputData);
@@ -108,7 +56,7 @@ export const App = () => {
           Number.isFinite(parsedOrder) && parsedOrder >= 1
             ? Math.floor(parsedOrder)
             : 2;
-        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
+        return numbers.length === 0 ? null : calculateBase(numbers, safeOrder);
       }
       case "sentences": {
         const numbers = parseSentenceLengths(inputData);
@@ -117,7 +65,7 @@ export const App = () => {
           Number.isFinite(parsedOrder) && parsedOrder >= 1
             ? Math.floor(parsedOrder)
             : 2;
-        return numbers.length === 0 ? null : calculate(numbers, safeOrder);
+        return numbers.length === 0 ? null : calculateBase(numbers, safeOrder);
       }
       case "custom": {
         const expressions = parseCustomExpression(inputData, searchExpression);
@@ -130,15 +78,7 @@ export const App = () => {
         const matrix = parseLetterPairs(inputData);
         const correlation = calculateCorrelation(matrix);
         if (correlation === null) return null;
-
-        const activeX = correlation.rowX
-          .map((sum, i) => (sum > 0 ? i : -1))
-          .filter((i) => i !== -1);
-        const activeY = correlation.rowY
-          .map((sum, j) => (sum > 0 ? j : -1))
-          .filter((j) => j !== -1);
-
-        return { ...correlation, matrix, activeX, activeY };
+        return { ...correlation, matrix };
       }
     }
   }, [mode, inputData, order, searchExpression]);

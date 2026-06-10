@@ -1,36 +1,12 @@
-export type DistributionRow<T = number> = {
-  value: T;
-  frequency: number;
-  relativeFrequency: number;
-  cumulativeFrequency: number;
-  relativeCumulativeFrequency: number;
-};
+import type {
+  CategoricalStatistics,
+  Correlation,
+  DistributionRow,
+  EdfPiece,
+  Statistics,
+} from "@/interfaces/interfaces.ts";
 
-export type EdfPiece = {
-  range: string;
-  value: string;
-};
-
-export interface BaseStatistics<T> {
-  variationalSeries: T[];
-  distribution: DistributionRow<T>[];
-  total: number;
-}
-
-export interface Statistics extends BaseStatistics<number> {
-  edf: EdfPiece[];
-  mode: number[];
-  median: number;
-  mean: number;
-  variance: number;
-  standardDeviation: number;
-  rawMoment: number;
-  momentOrder: number;
-}
-
-export type CategoricalStatistics = BaseStatistics<string>;
-
-export const calculate = (data: number[], order: number): Statistics => {
+export const calculateBase = (data: number[], order: number): Statistics => {
   const length = data.length;
   const variationalSeries = [...data].sort((a, b) => a - b);
 
@@ -142,7 +118,9 @@ export const calculateCategorical = (data: string[]): CategoricalStatistics => {
   };
 };
 
-export const calculateCorrelation = (matrix: number[][]) => {
+export const calculateCorrelation = (
+  matrix: number[][],
+): Correlation | null => {
   const size = matrix.length;
 
   let n = 0;
@@ -187,6 +165,13 @@ export const calculateCorrelation = (matrix: number[][]) => {
   const r =
     (sumXY - n * meanX * meanY) / (n * standardDeviationX * standardDeviationY);
 
+  const activeX = rowX
+    .map((sum, i) => (sum > 0 ? i : -1))
+    .filter((i) => i !== -1);
+  const activeY = rowY
+    .map((sum, j) => (sum > 0 ? j : -1))
+    .filter((j) => j !== -1);
+
   return {
     r,
     n,
@@ -196,5 +181,7 @@ export const calculateCorrelation = (matrix: number[][]) => {
     standardDeviationY,
     rowX,
     rowY,
+    activeX,
+    activeY,
   };
 };

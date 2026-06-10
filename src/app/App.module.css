@@ -141,20 +141,3 @@
   flex-direction: column;
   gap: 6px;
 }
-
-.matrixTd {
-  border: var(--border);
-  padding: 0;
-  text-align: center;
-  width: 50px;
-}
-
-.matrixInput {
-  width: 100%;
-  height: 40px;
-  box-sizing: border-box;
-  border: none;
-  text-align: center;
-  font-size: 14px;
-  outline: none;
-}
