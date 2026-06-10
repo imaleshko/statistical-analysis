@@ -1,3 +1,41 @@
+const ALPHABET = [
+  "а",
+  "б",
+  "в",
+  "г",
+  "ґ",
+  "д",
+  "е",
+  "є",
+  "ж",
+  "з",
+  "и",
+  "і",
+  "ї",
+  "й",
+  "к",
+  "л",
+  "м",
+  "н",
+  "о",
+  "п",
+  "р",
+  "с",
+  "т",
+  "у",
+  "ф",
+  "х",
+  "ц",
+  "ч",
+  "ш",
+  "щ",
+  "ь",
+  "ю",
+  "я",
+];
+
+const LETTER_INDEX = new Map(ALPHABET.map((char, index) => [char, index]));
+
 export const parseNumbers = (data: string): number[] =>
   data
     .split(/[\s,;]+/)
@@ -42,4 +80,29 @@ export const parseCustomExpression = (
   }
 
   return result;
+};
+
+export const parseLetterPairs = (text: string): number[][] => {
+  const size = ALPHABET.length;
+  const matrix: number[][] = Array.from({ length: size }, () =>
+    Array(size).fill(0),
+  );
+
+  const words = text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => word.replace(/[^абвгґдеєжзиіїйклмнопрстуфхцчшщьюя]/g, ""))
+    .filter(Boolean);
+
+  for (const word of words) {
+    for (let i = 0; i < word.length - 1; i++) {
+      const char1 = LETTER_INDEX.get(word[i]);
+      const char2 = LETTER_INDEX.get(word[i + 1]);
+      if (char1 !== undefined && char2 !== undefined) {
+        matrix[char1][char2]++;
+      }
+    }
+  }
+
+  return matrix;
 };

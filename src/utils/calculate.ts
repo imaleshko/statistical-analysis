@@ -141,3 +141,60 @@ export const calculateCategorical = (data: string[]): CategoricalStatistics => {
     total: length,
   };
 };
+
+export const calculateCorrelation = (matrix: number[][]) => {
+  const size = matrix.length;
+
+  let n = 0;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+  let sumY2 = 0;
+
+  const rowX = new Array(size).fill(0);
+  const rowY = new Array(size).fill(0);
+
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      const frequencies = matrix[i][j];
+
+      if (frequencies > 0) {
+        const valueX = i + 1;
+        const valueY = j + 1;
+
+        n += frequencies;
+        sumX += valueX * frequencies;
+        sumY += valueY * frequencies;
+        sumXY += valueX * valueY * frequencies;
+        sumX2 += valueX ** 2 * frequencies;
+        sumY2 += valueY ** 2 * frequencies;
+
+        rowX[i] += frequencies;
+        rowY[j] += frequencies;
+      }
+    }
+  }
+
+  if (n === 0) return null;
+
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+
+  const standardDeviationX = Math.sqrt(sumX2 / n - meanX ** 2);
+  const standardDeviationY = Math.sqrt(sumY2 / n - meanY ** 2);
+
+  const r =
+    (sumXY - n * meanX * meanY) / (n * standardDeviationX * standardDeviationY);
+
+  return {
+    r,
+    n,
+    meanX,
+    meanY,
+    standardDeviationX,
+    standardDeviationY,
+    rowX,
+    rowY,
+  };
+};
